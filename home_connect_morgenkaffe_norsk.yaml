@@ -409,13 +409,13 @@ action:
                 sequence:
                   - service: switch.turn_off
                     target: { entity_id: !input coffee_machine_power }
-                  - delay: 45
+                  - delay: 70
                   - service: switch.turn_on
                     target: { entity_id: !input coffee_machine_power }
             default:
               - service: switch.turn_on
                 target: { entity_id: !input coffee_machine_power }
-          - delay: 20
+          - delay: 45
           # Spør om Favoritt
           - domain: mobile_app
             type: notify
@@ -746,4 +746,5 @@ action:
           - domain: mobile_app
             type: notify
             device_id: !input notify_device
+
             message: "Avbrutt (Maskin slo seg av)."
