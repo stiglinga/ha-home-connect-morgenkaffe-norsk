@@ -17,7 +17,7 @@ Klikk på knappen for å importere versjonen som passer ditt behov direkte inn i
 
 ### Norsk Versjon
 
-[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint URL.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/stiglinga/ha-home-connect-morgenkaffe-norsk/blob/main/home_connect_coffee_no.yaml)
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint URL.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/stiglinga/ha-home-connect-morgenkaffe-norsk/blob/main/home_connect_morgenkaffe_norsk.yaml)
 
 ---
 
