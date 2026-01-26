@@ -1,0 +1,749 @@
+blueprint:
+  name: Home Connect Morgenkaffe (Norsk v1)
+  description: >
+    Automasjon for ferdig kopp med kaffe med styring via tid eller sensorer/brytere.
+    
+        FORUTSETNING: Krever at du har opprettet følgende hjelpere med nøyaktig disse ID-ene:
+    - input_button.kaffe_start
+    - input_boolean.kaffe_nattmodus
+    - input_datetime.kaffe_start_tid
+    - input_text.kaffe_favoritt
+  domain: automation
+  input:
+    # --- KAFFEMASKINENS ENTITETER ---
+    coffee_machine_power:
+      name: "Strømbryter entitet (switch.xxxxx_power)"
+      selector: { entity: { domain: switch } }
+    coffee_machine_selected:
+      name: "Selected Program entitet (select.xxxxxx_selected_program)"
+      selector: { entity: { domain: select } }
+    coffee_machine_active:
+      name: "Active Program entitet (select.xxxx_active_program)"
+      selector: { entity: { domain: select } }
+    coffee_machine_strength:
+      name: "Styrke-velger (select.xxxx_bean_amount)"
+      selector: { entity: { domain: select } }
+    coffee_machine_quantity:
+      name: "Mengde-velger (number.xxxx_fill_quantity)"
+      selector: { entity: { domain: number } }
+    coffee_machine_temp:
+      name: "Temperatur-velger (select.xxxx_coffee_temperature)"
+      selector: { entity: { domain: select } }
+
+    # --- VARSLING ---
+    notify_device:
+      name: "Hvem skal motta menyen?"
+      selector: { device: { integration: mobile_app } }
+
+    # --- TIDSVALG ---
+    time_preset_1:
+      name: "Tidsknapp 1 (Standard: 06:30)"
+      default: "06:30"
+      selector: { text: {} }
+    time_preset_2:
+      name: "Tidsknapp 2 (Standard: 07:00)"
+      default: "07:00"
+      selector: { text: {} }
+
+    # --- ALTERNATIVE TRIGGERE (VALGFRITT) ---
+    use_alt_triggers:
+      name: "Aktiver Alternative Triggere?"
+      description: "Huk av her hvis du vil ha mulighet til å starte kaffen med en sensor/bryter i stedet for tid."
+      default: false
+      selector:
+        boolean: {}
+
+    trigger_opt1_name:
+      name: "Alt. Trigger 1 - Navn i menyen"
+      default: "Vekkerklokke"
+    trigger_opt1_entity:
+      name: "Alt. Trigger 1 - Entitet"
+      description: "Entiteten som starter kaffen når den går til 'ON' (f.eks. alarm, sensor)."
+      default: input_boolean.kaffe_nattmodus # Dummy default
+      selector: { entity: {} }
+
+    trigger_opt2_name:
+      name: "Alt. Trigger 2 - Navn i menyen"
+      default: "Bevegelse Kjøkken"
+    trigger_opt2_entity:
+      name: "Alt. Trigger 2 - Entitet"
+      default: input_boolean.kaffe_nattmodus # Dummy default
+      selector: { entity: {} }
+
+    trigger_opt3_name:
+      name: "Alt. Trigger 3 - Navn i menyen"
+      default: "Lys på"
+    trigger_opt3_entity:
+      name: "Alt. Trigger 3 - Entitet"
+      default: input_boolean.kaffe_nattmodus # Dummy default
+      selector: { entity: {} }
+
+    # --- FAVORITT 1 ---
+    fav1_name:
+      name: "Favoritt 1 - Navn"
+      default: "Morgenkaffe"
+    fav1_prog:
+      name: "Favoritt 1 - Program"
+      default: consumer_products_coffee_maker_program_beverage_coffee
+      selector:
+        select:
+          options:
+            - label: "Kaffe (Coffee)"
+              value: consumer_products_coffee_maker_program_beverage_coffee
+            - label: "Espresso"
+              value: consumer_products_coffee_maker_program_beverage_espresso
+            - label: "Cappuccino"
+              value: consumer_products_coffee_maker_program_beverage_cappuccino
+            - label: "Latte Macchiato"
+              value: consumer_products_coffee_maker_program_beverage_latte_macchiato
+            - label: "Caffe Latte"
+              value: consumer_products_coffee_maker_program_beverage_caffe_latte
+            - label: "Ristretto"
+              value: consumer_products_coffee_maker_program_beverage_ristretto
+            - label: "Varm Melk"
+              value: consumer_products_coffee_maker_program_beverage_warm_milk
+            - label: "Melkeskum"
+              value: consumer_products_coffee_maker_program_beverage_milk_froth
+            - label: "Varmtvann"
+              value: consumer_products_coffee_maker_program_beverage_hot_water
+    fav1_strength:
+      name: "Favoritt 1 - Styrke"
+      default: consumer_products_coffee_maker_enum_type_bean_amount_very_strong
+      selector:
+        select:
+          options:
+            - label: "Mild"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_mild
+            - label: "Normal"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_normal
+            - label: "Sterk"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_strong
+            - label: "Veldig Sterk"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_very_strong
+            - label: "Dobbel Shot"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_double_shot
+            - label: "Dobbel Shot+"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_double_shot_plus
+    fav1_size:
+      name: "Favoritt 1 - Mengde (ml)"
+      default: 200
+      selector:
+        number:
+          min: 10
+          max: 500
+          unit_of_measurement: ml
+    fav1_temp:
+      name: "Favoritt 1 - Temp"
+      default: consumer_products_coffee_maker_enum_type_coffee_temperature_94_c
+      selector:
+        select:
+          options:
+            - label: "88°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_88_c
+            - label: "90°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_90_c
+            - label: "92°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_92_c
+            - label: "94°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_94_c
+            - label: "95°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_95_c
+            - label: "96°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_96_c
+
+    # --- FAVORITT 2 ---
+    fav2_name:
+      name: "Favoritt 2 - Navn"
+      default: "Sterk Espresso"
+    fav2_prog:
+      name: "Favoritt 2 - Program"
+      default: consumer_products_coffee_maker_program_beverage_espresso
+      selector:
+        select:
+          options:
+            - label: "Kaffe"
+              value: consumer_products_coffee_maker_program_beverage_coffee
+            - label: "Espresso"
+              value: consumer_products_coffee_maker_program_beverage_espresso
+            - label: "Cappuccino"
+              value: consumer_products_coffee_maker_program_beverage_cappuccino
+    fav2_strength:
+      name: "Favoritt 2 - Styrke"
+      default: consumer_products_coffee_maker_enum_type_bean_amount_very_strong
+      selector:
+        select:
+          options:
+            - label: "Normal"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_normal
+            - label: "Sterk"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_strong
+            - label: "Veldig Sterk"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_very_strong
+            - label: "Dobbel Shot"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_double_shot
+    fav2_size:
+      name: "Favoritt 2 - Mengde (ml)"
+      default: 50
+      selector:
+        number:
+          min: 10
+          max: 500
+          unit_of_measurement: ml
+    fav2_temp:
+      name: "Favoritt 2 - Temp"
+      default: consumer_products_coffee_maker_enum_type_coffee_temperature_92_c
+      selector:
+        select:
+          options:
+            - label: "88°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_88_c
+            - label: "90°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_90_c
+            - label: "92°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_92_c
+            - label: "94°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_94_c
+            - label: "95°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_95_c
+            - label: "96°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_96_c
+
+    # --- FAVORITT 3 ---
+    fav3_name:
+      name: "Favoritt 3 - Navn"
+      default: "Cappuccino"
+    fav3_prog:
+      name: "Favoritt 3 - Program"
+      default: consumer_products_coffee_maker_program_beverage_cappuccino
+      selector:
+        select:
+          options:
+            - label: "Kaffe"
+              value: consumer_products_coffee_maker_program_beverage_coffee
+            - label: "Espresso"
+              value: consumer_products_coffee_maker_program_beverage_espresso
+            - label: "Cappuccino"
+              value: consumer_products_coffee_maker_program_beverage_cappuccino
+            - label: "Latte Macchiato"
+              value: consumer_products_coffee_maker_program_beverage_latte_macchiato
+            - label: "Caffe Latte"
+              value: consumer_products_coffee_maker_program_beverage_caffe_latte
+            - label: "Ristretto"
+              value: consumer_products_coffee_maker_program_beverage_ristretto
+            - label: "Varm Melk"
+              value: consumer_products_coffee_maker_program_beverage_warm_milk
+    fav3_strength:
+      name: "Favoritt 3 - Styrke"
+      default: consumer_products_coffee_maker_enum_type_bean_amount_normal
+      selector:
+        select:
+          options:
+            - label: "Mild"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_mild
+            - label: "Normal"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_normal
+            - label: "Sterk"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_strong
+    fav3_size:
+      name: "Favoritt 3 - Mengde (ml)"
+      default: 200
+      selector:
+        number:
+          min: 10
+          max: 500
+          unit_of_measurement: ml
+    fav3_temp:
+      name: "Favoritt 3 - Temp"
+      default: consumer_products_coffee_maker_enum_type_coffee_temperature_90_c
+      selector:
+        select:
+          options:
+            - label: "90°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_90_c
+            - label: "92°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_92_c
+            - label: "94°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_94_c
+            - label: "95°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_95_c
+            - label: "96°C"
+              value: consumer_products_coffee_maker_enum_type_coffee_temperature_96_c
+
+mode: restart
+max_exceeded: silent
+
+trigger:
+  # 1. Start-Knapp
+  - platform: state
+    entity_id: 
+      - input_button.kaffe_start
+    id: "setup_start"
+
+  # 2. Svar: Hvilken drikke?
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data: { action: "CHOOSE_FAV_1" }
+    id: "set_fav_1"
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data: { action: "CHOOSE_FAV_2" }
+    id: "set_fav_2"
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data: { action: "CHOOSE_FAV_3" }
+    id: "set_fav_3"
+
+  # 3. Svar: Hvilken metode (hvis aktivert)?
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data: { action: "METHOD_TIME" }
+    id: "method_time"
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data: { action: "METHOD_ENTITY_1" }
+    id: "method_entity_1"
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data: { action: "METHOD_ENTITY_2" }
+    id: "method_entity_2"
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data: { action: "METHOD_ENTITY_3" }
+    id: "method_entity_3"
+
+  # 4. Svar: Hvilken tid (Presets)?
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data: { action: "TIME_0630" }
+    id: "set_time_0630"
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data: { action: "TIME_0700" }
+    id: "set_time_0700"
+  
+  # 5. Svar: Manuell tid (REPLY)
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data: { action: "TIME_MANUAL_INIT" }
+    id: "set_time_manual_init"
+  
+  # FIX: Lytter etter REPLY
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data: { action: "REPLY" }
+    id: "set_time_manual_send"
+
+  # 6. Operasjoner (Keep-Alive, Sikkerhet)
+  - platform: time_pattern
+    hours: "/2"
+    id: "keep_alive"
+  - platform: state
+    entity_id: !input coffee_machine_power
+    to: "off"
+    from: "on"
+    id: "safety_off"
+  - platform: state
+    entity_id: !input coffee_machine_power
+    to: "unavailable"
+    id: "safety_off"
+  
+  # 7. BRYGG-TRIGGERE (Tid + Alt)
+  - platform: time
+    at: input_datetime.kaffe_start_tid
+    id: "brew_time"
+  
+  - platform: state
+    entity_id: !input trigger_opt1_entity
+    to: "on"
+    id: "brew_entity_1"
+  - platform: state
+    entity_id: !input trigger_opt2_entity
+    to: "on"
+    id: "brew_entity_2"
+  - platform: state
+    entity_id: !input trigger_opt3_entity
+    to: "on"
+    id: "brew_entity_3"
+
+action:
+  # --- STEP 0: INITIALISERE ALLE VARIABLER ---
+  - variables:
+      # Globale innstillinger
+      use_alt: !input use_alt_triggers
+      t_preset_1: !input time_preset_1
+      t_preset_2: !input time_preset_2
+      
+      # Favoritt 1
+      n1: !input fav1_name
+      p1: !input fav1_prog
+      s1: !input fav1_strength
+      sz1: !input fav1_size
+      t1: !input fav1_temp
+      
+      # Favoritt 2
+      n2: !input fav2_name
+      p2: !input fav2_prog
+      s2: !input fav2_strength
+      sz2: !input fav2_size
+      t2: !input fav2_temp
+      
+      # Favoritt 3
+      n3: !input fav3_name
+      p3: !input fav3_prog
+      s3: !input fav3_strength
+      sz3: !input fav3_size
+      t3: !input fav3_temp
+
+  - choose:
+      # --- FASE 1: SKYLLING OG VALG AV DRIKK ---
+      - conditions:
+          - condition: trigger
+            id: "setup_start"
+        sequence:
+          # Skylling
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: !input coffee_machine_power
+                    state: "on"
+                sequence:
+                  - service: switch.turn_off
+                    target: { entity_id: !input coffee_machine_power }
+                  - delay: 45
+                  - service: switch.turn_on
+                    target: { entity_id: !input coffee_machine_power }
+            default:
+              - service: switch.turn_on
+                target: { entity_id: !input coffee_machine_power }
+          - delay: 20
+          # Spør om Favoritt
+          - domain: mobile_app
+            type: notify
+            device_id: !input notify_device
+            message: "Maskinen er skylt! Hva vil du ha?"
+            title: "Velg Drikk"
+            data:
+              actions:
+                - action: "CHOOSE_FAV_1"
+                  title: "{{ n1 }}"
+                - action: "CHOOSE_FAV_2"
+                  title: "{{ n2 }}"
+                - action: "CHOOSE_FAV_3"
+                  title: "{{ n3 }}"
+
+      # --- FASE 2: LAGRE DRIKK & SJEKK METODE ---
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: "set_fav_1"
+              - condition: trigger
+                id: "set_fav_2"
+              - condition: trigger
+                id: "set_fav_3"
+        sequence:
+          # Lagre valget
+          - service: input_text.set_value
+            target: { entity_id: input_text.kaffe_favoritt }
+            data:
+              value: >
+                {% if trigger.event.data.action == 'CHOOSE_FAV_1' %}fav1
+                {% elif trigger.event.data.action == 'CHOOSE_FAV_2' %}fav2
+                {% else %}fav3{% endif %}
+          
+          # Sjekk om Alternative Triggere er aktivert
+          - choose:
+              - conditions: "{{ use_alt == true }}"
+                sequence:
+                  # Spør om utløser
+                  - domain: mobile_app
+                    type: notify
+                    device_id: !input notify_device
+                    message: "Hvordan skal kaffen starte?"
+                    title: "Velg Utløser"
+                    data:
+                      actions:
+                        - action: "METHOD_TIME"
+                          title: "Tidspunkt"
+                        - action: "METHOD_ENTITY_1"
+                          title: !input trigger_opt1_name
+                        - action: "METHOD_ENTITY_2"
+                          title: !input trigger_opt2_name
+                        - action: "METHOD_ENTITY_3"
+                          title: !input trigger_opt3_name
+            default:
+              # Fallback: Hopp rett til tidsvalg
+              - domain: mobile_app
+                type: notify
+                device_id: !input notify_device
+                message: "Den er grei! Når skal den være klar?"
+                title: "Velg Tid"
+                data:
+                  actions:
+                    - action: "TIME_0630"
+                      title: "{{ t_preset_1 }}"
+                    - action: "TIME_0700"
+                      title: "{{ t_preset_2 }}"
+                    - action: "TIME_MANUAL_INIT"
+                      title: "Annen tid..."
+
+      # --- FASE 3: HÅNDTER METODE-VALG ---
+      - conditions:
+          - condition: trigger
+            id: "method_time"
+        sequence:
+          # Spør om tid
+          - domain: mobile_app
+            type: notify
+            device_id: !input notify_device
+            message: "Den er grei! Når skal den være klar?"
+            title: "Velg Tid"
+            data:
+              actions:
+                - action: "TIME_0630"
+                  title: "{{ t_preset_1 }}"
+                - action: "TIME_0700"
+                  title: "{{ t_preset_2 }}"
+                - action: "TIME_MANUAL_INIT"
+                  title: "Annen tid..."
+
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: "method_entity_1"
+              - condition: trigger
+                id: "method_entity_2"
+              - condition: trigger
+                id: "method_entity_3"
+        sequence:
+          # Lagre trigger
+          - service: input_text.set_value
+            target: { entity_id: input_text.kaffe_favoritt }
+            data:
+              value: >
+                {{ states('input_text.kaffe_favoritt') }}_trigger
+                {%- if trigger.event.data.action == 'METHOD_ENTITY_1' %}1
+                {%- elif trigger.event.data.action == 'METHOD_ENTITY_2' %}2
+                {%- else %}3{% endif %}
+          # Armer
+          - service: input_boolean.turn_on
+            target: { entity_id: input_boolean.kaffe_nattmodus }
+          - domain: mobile_app
+            type: notify
+            device_id: !input notify_device
+            message: "Systemet er armert! Venter på hendelse."
+
+      # --- FASE 4: TIDS-HÅNDTERING ---
+      
+      # 4A. Håndter "Annen tid..." trykk (Åpne input-feltet)
+      - conditions:
+          - condition: trigger
+            id: "set_time_manual_init"
+        sequence:
+          # FIX: Sender varsel med standard "REPLY" action
+          - domain: mobile_app
+            type: notify
+            device_id: !input notify_device
+            message: "Skriv inn klokkeslett (HH:MM)"
+            title: "Manuell tid"
+            data:
+              actions:
+                - action: "REPLY"
+                  title: "Skriv tid"
+
+      # 4B. Beregn tid (Presets eller Manuell Input)
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: "set_time_0630"
+              - condition: trigger
+                id: "set_time_0700"
+              - condition: trigger
+                id: "set_time_manual_send"
+        sequence:
+          # Lagre at vi bruker TID
+          - service: input_text.set_value
+            target: { entity_id: input_text.kaffe_favoritt }
+            data:
+              value: "{{ states('input_text.kaffe_favoritt') }}_time"
+
+          # Beregn Tid
+          - service: input_datetime.set_datetime
+            target: { entity_id: input_datetime.kaffe_start_tid }
+            data:
+              time: >
+                {% if trigger.event.data.action == 'TIME_0630' %}
+                  {{ (today_at(t_preset_1) - timedelta(seconds=90)).strftime('%H:%M:%S') }}
+                {% elif trigger.event.data.action == 'TIME_0700' %}
+                  {{ (today_at(t_preset_2) - timedelta(seconds=90)).strftime('%H:%M:%S') }}
+                {% else %}
+                  {# SMART TEKST-TOLKING (UTEN try/except) #}
+                  {% set raw = trigger.event.data.reply_text %}
+                  
+                  {# Sjekk om input er tom/ugyldig #}
+                  {% if raw is not defined or raw == '' or raw is none %}
+                    {{ (today_at(t_preset_2) - timedelta(seconds=90)).strftime('%H:%M:%S') }}
+                  {% else %}
+                    {# Rens input #}
+                    {% set t = raw | replace('.', ':') | trim %}
+                    {% if ':' not in t %} {% set t = t ~ ':00' %} {% endif %}
+                    {% if t|length < 5 %} {% set t = '0' ~ t %} {% endif %}
+                    
+                    {# Enkel validering: Må være HH:MM #}
+                    {% if t|length == 5 and t[2] == ':' %}
+                        {{ (today_at(t) - timedelta(seconds=90)).strftime('%H:%M:%S') }}
+                    {% else %}
+                        {# Fallback hvis formatet er feil #}
+                        {{ (today_at(t_preset_2) - timedelta(seconds=90)).strftime('%H:%M:%S') }}
+                    {% endif %}
+                  {% endif %}
+                {% endif %}
+          
+          # Armer
+          - service: input_boolean.turn_on
+            target: { entity_id: input_boolean.kaffe_nattmodus }
+          - domain: mobile_app
+            type: notify
+            device_id: !input notify_device
+            message: "Systemet armert! Klar kl {{ states('input_datetime.kaffe_start_tid') }}."
+
+      # --- FASE 5: BRYGGING ---
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: "brew_time"
+              - condition: trigger
+                id: "brew_entity_1"
+              - condition: trigger
+                id: "brew_entity_2"
+              - condition: trigger
+                id: "brew_entity_3"
+          - condition: state
+            entity_id: input_boolean.kaffe_nattmodus
+            state: "on"
+          # SIKKERHETSSJEKK
+          - condition: state
+            entity_id: !input coffee_machine_power
+            state: "on"
+        sequence:
+          # SJEKK TRIGGER
+          - variables:
+              stored_config: "{{ states('input_text.kaffe_favoritt') }}"
+          
+          - choose:
+              # Scenario A: Tidspunkt
+              - conditions: 
+                  - "{{ trigger.id == 'brew_time' }}"
+                  - "{{ '_trigger' not in stored_config }}"
+                sequence: [] 
+              # Scenario B: Triggere
+              - conditions:
+                  - "{{ trigger.id == 'brew_entity_1' }}"
+                  - "{{ '_trigger1' in stored_config }}"
+                sequence: [] 
+              - conditions:
+                  - "{{ trigger.id == 'brew_entity_2' }}"
+                  - "{{ '_trigger2' in stored_config }}"
+                sequence: []
+              - conditions:
+                  - "{{ trigger.id == 'brew_entity_3' }}"
+                  - "{{ '_trigger3' in stored_config }}"
+                sequence: []
+            
+            default:
+              - stop: "Feil trigger aktivert."
+
+          # --- BRYGGING ---
+          - variables:
+              choice: "{{ stored_config.split('_')[0] }}"
+              
+              friendly_name: >
+                {% if choice == 'fav1' %}{{ n1 }}
+                {% elif choice == 'fav2' %}{{ n2 }}
+                {% else %}{{ n3 }}{% endif %}
+              
+              prog: >
+                {% if choice == 'fav1' %}{{ p1 }}
+                {% elif choice == 'fav2' %}{{ p2 }}
+                {% else %}{{ p3 }}{% endif %}
+              strength: >
+                {% if choice == 'fav1' %}{{ s1 }}
+                {% elif choice == 'fav2' %}{{ s2 }}
+                {% else %}{{ s3 }}{% endif %}
+              size: >
+                {% if choice == 'fav1' %}{{ sz1 }}
+                {% elif choice == 'fav2' %}{{ sz2 }}
+                {% else %}{{ sz3 }}{% endif %}
+              temp: >
+                {% if choice == 'fav1' %}{{ t1 }}
+                {% elif choice == 'fav2' %}{{ t2 }}
+                {% else %}{{ t3 }}{% endif %}
+          
+          # Maskin-kommandoer
+          - service: select.select_option
+            target: { entity_id: !input coffee_machine_selected }
+            data: { option: "{{ prog }}" }
+          - delay: 2
+          - service: select.select_option
+            target: { entity_id: !input coffee_machine_strength }
+            data: { option: "{{ strength }}" }
+          - service: number.set_value
+            target: { entity_id: !input coffee_machine_quantity }
+            data: { value: "{{ size }}" }
+          - service: select.select_option
+            target: { entity_id: !input coffee_machine_temp }
+            data: { option: "{{ temp }}" }
+          - delay: 2
+          - service: select.select_option
+            target: { entity_id: !input coffee_machine_active }
+            data: { option: "{{ prog }}" }
+          
+          # Opprydding
+          - service: input_boolean.turn_off
+            target: { entity_id: input_boolean.kaffe_nattmodus }
+          - delay: 90
+          - domain: mobile_app
+            type: notify
+            device_id: !input notify_device
+            message: "Din {{ friendly_name }} er klar! ☕"
+
+      # --- KEEP ALIVE ---
+      - conditions:
+          - condition: trigger
+            id: "keep_alive"
+          - condition: state
+            entity_id: input_boolean.kaffe_nattmodus
+            state: "on"
+          - condition: state
+            entity_id: !input coffee_machine_power
+            state: "on"
+        sequence:
+          - service: select.select_option
+            target: { entity_id: !input coffee_machine_selected }
+            data: { option: consumer_products_coffee_maker_program_beverage_coffee }
+          - delay: 10
+          - service: select.select_option
+            target: { entity_id: !input coffee_machine_selected }
+            data: { option: consumer_products_coffee_maker_program_beverage_espresso }
+          - delay: 10
+          - service: select.select_option
+            target: { entity_id: !input coffee_machine_selected }
+            data: { option: consumer_products_coffee_maker_program_beverage_coffee }
+      
+      # --- SIKKERHET ---
+      - conditions:
+          - condition: trigger
+            id: "safety_off"
+          - condition: state
+            entity_id: input_boolean.kaffe_nattmodus
+            state: "on"
+        sequence:
+          - service: input_boolean.turn_off
+            target: { entity_id: input_boolean.kaffe_nattmodus }
+          - domain: mobile_app
+            type: notify
+            device_id: !input notify_device
+            message: "Avbrutt (Maskin slo seg av)."
