@@ -1,9 +1,9 @@
 blueprint:
-  name: Home Connect Morgenkaffe (Norsk v1)
+  name: Home Connect Morgenkaffe (Norsk v1.2)
   description: >
     Automasjon for ferdig kopp med kaffe med styring via tid eller sensorer/brytere.
-    
-        FORUTSETNING: Krever at du har opprettet følgende hjelpere med nøyaktig disse ID-ene:
+        
+    FORUTSETNING: Krever at du har opprettet følgende hjelpere med nøyaktig disse ID-ene:
     - input_button.kaffe_start
     - input_boolean.kaffe_nattmodus
     - input_datetime.kaffe_start_tid
@@ -35,7 +35,7 @@ blueprint:
       name: "Hvem skal motta menyen?"
       selector: { device: { integration: mobile_app } }
 
-    # --- TIDSVALG ---
+    # --- TIDSVALG (4 PRESETS) ---
     time_preset_1:
       name: "Tidsknapp 1 (Standard: 06:30)"
       default: "06:30"
@@ -43,6 +43,14 @@ blueprint:
     time_preset_2:
       name: "Tidsknapp 2 (Standard: 07:00)"
       default: "07:00"
+      selector: { text: {} }
+    time_preset_3:
+      name: "Tidsknapp 3 (Standard: 07:30)"
+      default: "07:30"
+      selector: { text: {} }
+    time_preset_4:
+      name: "Tidsknapp 4 (Standard: 08:00)"
+      default: "08:00"
       selector: { text: {} }
 
     # --- ALTERNATIVE TRIGGERE (VALGFRITT) ---
@@ -244,6 +252,10 @@ blueprint:
               value: consumer_products_coffee_maker_enum_type_bean_amount_normal
             - label: "Sterk"
               value: consumer_products_coffee_maker_enum_type_bean_amount_strong
+            - label: "Veldig Sterk"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_very_strong
+            - label: "Double Shot"
+              value: consumer_products_coffee_maker_enum_type_bean_amount_double_shot
     fav3_size:
       name: "Favoritt 3 - Mengde (ml)"
       default: 200
@@ -269,7 +281,7 @@ blueprint:
             - label: "96°C"
               value: consumer_products_coffee_maker_enum_type_coffee_temperature_96_c
 
-mode: restart
+mode: single # VIKTIG: Single mode hindrer at Safety-triggeren dreper oppsettet
 max_exceeded: silent
 
 trigger:
@@ -311,7 +323,7 @@ trigger:
     event_data: { action: "METHOD_ENTITY_3" }
     id: "method_entity_3"
 
-  # 4. Svar: Hvilken tid (Presets)?
+  # 4. Svar: Hvilken tid (4 Presets)?
   - platform: event
     event_type: mobile_app_notification_action
     event_data: { action: "TIME_0630" }
@@ -320,18 +332,14 @@ trigger:
     event_type: mobile_app_notification_action
     event_data: { action: "TIME_0700" }
     id: "set_time_0700"
-  
-  # 5. Svar: Manuell tid (REPLY)
   - platform: event
     event_type: mobile_app_notification_action
-    event_data: { action: "TIME_MANUAL_INIT" }
-    id: "set_time_manual_init"
-  
-  # FIX: Lytter etter REPLY
+    event_data: { action: "TIME_0730" }
+    id: "set_time_0730"
   - platform: event
     event_type: mobile_app_notification_action
-    event_data: { action: "REPLY" }
-    id: "set_time_manual_send"
+    event_data: { action: "TIME_0800" }
+    id: "set_time_0800"
 
   # 6. Operasjoner (Keep-Alive, Sikkerhet)
   - platform: time_pattern
@@ -372,6 +380,8 @@ action:
       use_alt: !input use_alt_triggers
       t_preset_1: !input time_preset_1
       t_preset_2: !input time_preset_2
+      t_preset_3: !input time_preset_3
+      t_preset_4: !input time_preset_4
       
       # Favoritt 1
       n1: !input fav1_name
@@ -400,8 +410,9 @@ action:
           - condition: trigger
             id: "setup_start"
         sequence:
-          # Skylling
+          # Sjekk maskinens tilstand
           - choose:
+              # SCENARIO A: Maskinen er allerede PÅ -> Slå AV for å skylle
               - conditions:
                   - condition: state
                     entity_id: !input coffee_machine_power
@@ -409,14 +420,24 @@ action:
                 sequence:
                   - service: switch.turn_off
                     target: { entity_id: !input coffee_machine_power }
-                  - delay: 70
+                  # ØKT DELAY: Vent til den er helt av og ferdig med av-skylling
+                  - delay: 55 
                   - service: switch.turn_on
                     target: { entity_id: !input coffee_machine_power }
-            default:
-              - service: switch.turn_on
-                target: { entity_id: !input coffee_machine_power }
-          - delay: 45
-          # Spør om Favoritt
+
+              # SCENARIO B: Maskinen er AV -> Bare slå på (skyller automatisk)
+              - conditions:
+                  - condition: state
+                    entity_id: !input coffee_machine_power
+                    state: "off"
+                sequence:
+                  - service: switch.turn_on
+                    target: { entity_id: !input coffee_machine_power }
+          
+          # EKSTRA VENTETID: La maskinen koble til WiFi og kjøre oppstartsskylling
+          - delay: 15
+          
+          # Send Menyen
           - domain: mobile_app
             type: notify
             device_id: !input notify_device
@@ -484,8 +505,10 @@ action:
                       title: "{{ t_preset_1 }}"
                     - action: "TIME_0700"
                       title: "{{ t_preset_2 }}"
-                    - action: "TIME_MANUAL_INIT"
-                      title: "Annen tid..."
+                    - action: "TIME_0730"
+                      title: "{{ t_preset_3 }}"
+                    - action: "TIME_0800"
+                      title: "{{ t_preset_4 }}"
 
       # --- FASE 3: HÅNDTER METODE-VALG ---
       - conditions:
@@ -504,8 +527,10 @@ action:
                   title: "{{ t_preset_1 }}"
                 - action: "TIME_0700"
                   title: "{{ t_preset_2 }}"
-                - action: "TIME_MANUAL_INIT"
-                  title: "Annen tid..."
+                - action: "TIME_0730"
+                  title: "{{ t_preset_3 }}"
+                - action: "TIME_0800"
+                  title: "{{ t_preset_4 }}"
 
       - conditions:
           - condition: or
@@ -534,25 +559,7 @@ action:
             device_id: !input notify_device
             message: "Systemet er armert! Venter på hendelse."
 
-      # --- FASE 4: TIDS-HÅNDTERING ---
-      
-      # 4A. Håndter "Annen tid..." trykk (Åpne input-feltet)
-      - conditions:
-          - condition: trigger
-            id: "set_time_manual_init"
-        sequence:
-          # FIX: Sender varsel med standard "REPLY" action
-          - domain: mobile_app
-            type: notify
-            device_id: !input notify_device
-            message: "Skriv inn klokkeslett (HH:MM)"
-            title: "Manuell tid"
-            data:
-              actions:
-                - action: "REPLY"
-                  title: "Skriv tid"
-
-      # 4B. Beregn tid (Presets eller Manuell Input)
+      # --- FASE 4: TIDS-HÅNDTERING (4 PRESETS) ---
       - conditions:
           - condition: or
             conditions:
@@ -561,7 +568,9 @@ action:
               - condition: trigger
                 id: "set_time_0700"
               - condition: trigger
-                id: "set_time_manual_send"
+                id: "set_time_0730"
+              - condition: trigger
+                id: "set_time_0800"
         sequence:
           # Lagre at vi bruker TID
           - service: input_text.set_value
@@ -569,7 +578,7 @@ action:
             data:
               value: "{{ states('input_text.kaffe_favoritt') }}_time"
 
-          # Beregn Tid
+          # Beregn Tid (Preset 1-4)
           - service: input_datetime.set_datetime
             target: { entity_id: input_datetime.kaffe_start_tid }
             data:
@@ -578,27 +587,10 @@ action:
                   {{ (today_at(t_preset_1) - timedelta(seconds=90)).strftime('%H:%M:%S') }}
                 {% elif trigger.event.data.action == 'TIME_0700' %}
                   {{ (today_at(t_preset_2) - timedelta(seconds=90)).strftime('%H:%M:%S') }}
+                {% elif trigger.event.data.action == 'TIME_0730' %}
+                  {{ (today_at(t_preset_3) - timedelta(seconds=90)).strftime('%H:%M:%S') }}
                 {% else %}
-                  {# SMART TEKST-TOLKING (UTEN try/except) #}
-                  {% set raw = trigger.event.data.reply_text %}
-                  
-                  {# Sjekk om input er tom/ugyldig #}
-                  {% if raw is not defined or raw == '' or raw is none %}
-                    {{ (today_at(t_preset_2) - timedelta(seconds=90)).strftime('%H:%M:%S') }}
-                  {% else %}
-                    {# Rens input #}
-                    {% set t = raw | replace('.', ':') | trim %}
-                    {% if ':' not in t %} {% set t = t ~ ':00' %} {% endif %}
-                    {% if t|length < 5 %} {% set t = '0' ~ t %} {% endif %}
-                    
-                    {# Enkel validering: Må være HH:MM #}
-                    {% if t|length == 5 and t[2] == ':' %}
-                        {{ (today_at(t) - timedelta(seconds=90)).strftime('%H:%M:%S') }}
-                    {% else %}
-                        {# Fallback hvis formatet er feil #}
-                        {{ (today_at(t_preset_2) - timedelta(seconds=90)).strftime('%H:%M:%S') }}
-                    {% endif %}
-                  {% endif %}
+                  {{ (today_at(t_preset_4) - timedelta(seconds=90)).strftime('%H:%M:%S') }}
                 {% endif %}
           
           # Armer
@@ -746,5 +738,4 @@ action:
           - domain: mobile_app
             type: notify
             device_id: !input notify_device
-
             message: "Avbrutt (Maskin slo seg av)."
